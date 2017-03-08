@@ -17,6 +17,7 @@ from model_train import deepID
 from libs.tfpipeline import input_pipeline
 
 Y_SIZE = 136
+IMAGE_SIZE = 64
 
 # Do not use a gui toolkit for matlotlib.
 matplotlib.use('Agg')
@@ -24,8 +25,8 @@ matplotlib.use('Agg')
 FLAGS = tf.app.flags.FLAGS
 
 
-tf.app.flags.DEFINE_string('checkpoint_dir', 'models/',
-                           """Directory where to read model checkpoints.""")
+#tf.app.flags.DEFINE_string('checkpoint_dir', 'models/',
+#                           """Directory where to read model checkpoints.""")
 
 # Flags governing the frequency of the eval.
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
@@ -163,8 +164,8 @@ def evaluate(shape=[64, 64, 1]):
     # Build a Graph that computes the logits predictions from the
     # inference model.
     with tf.device(FLAGS.device):
-        deepid = deepID(input_shape=[None, 64, 64, 1], n_filters=[20, 40, 60, 80], 
-            filter_sizes=[4, 3, 3, 2], activation=tf.nn.relu, dropout=False)
+        deepid = deepID(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1], n_filters=[26, 52, 52, 80], 
+            filter_sizes=[3, 6, 6, 4], activation=tf.nn.relu, dropout=False)
 
         tf.get_variable_scope().reuse_variables()
 

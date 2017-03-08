@@ -54,7 +54,7 @@ def input_pipeline(TXTs, batch_size, shape, is_training=False):
                                    batch_size=batch_size,
                                    capacity=capacity,
                                    min_after_dequeue=min_after_dequeue,
-                                   num_threads=2)
+                                   num_threads=10)
     # img_batch, label_batch = tf.train.batch([float_image, features], batch_size=batch_size)
     return img_batch, label_batch
 
@@ -94,15 +94,4 @@ def distort_color(image, thread_id=0, stddev=0.1, scope=None):
         # The random_* ops do not necessarily clamp.
         image = tf.clip_by_value(image, 0.0, 1.0)
         return image
-# shape = [64, 64, 1]
-# im_batch, label_batch = input_pipeline(TXTs, 1, shape)
-# with tf.Session() as sess:
-#    sess.run(tf.initialize_all_variables())
-#    coord = tf.train.Coordinator()
-#    threads = tf.train.start_queue_runners(coord=coord)
-#    im, feat = sess.run([im_batch, label_batch])
-#    print(feat[0])
-#    plt.imshow(im[0].reshape((39,39)))
-#    import pdb; pdb.set_trace()
-#    coord.request_stop()
-#    coord.join(threads)
+

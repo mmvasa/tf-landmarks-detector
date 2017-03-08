@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-import h5py
 
 AUGMENTED_PATH = 'augmented-data/'
 IMAGE_SIZE = 64
@@ -22,7 +21,6 @@ def read_data_from_txt(path, image_type):
                x_max = int(max([a[0] for a in points]))
                y_min = int(min([a[1] for a in points]))
                y_max = int(max([a[1] for a in points]))
-               print(x_min)
                result.append([image_name.replace(".pts", image_type), BBox([x_min,x_max,y_min,y_max]), 
                      points])
     return result
@@ -60,13 +58,10 @@ def data_augmentation(data, output, is_training=False):
     dst = AUGMENTED_PATH
     for (imgPath, bbx, landmarks) in data:
         imgPath = imgPath
-        print(imgPath)
         im = cv2.imread(imgPath, cv2.IMREAD_GRAYSCALE)
         imgName = imgPath.split('/')[-1][:-4]
-        print(im.shape)
       
-        bbx_sc = bbx.bbxScale(im.shape, scale=1.1)
-        print( bbx_sc.x, bbx_sc.y, bbx_sc.w, bbx_sc.h)
+        bbx_sc = bbx #.bbxScale(im.shape, scale=1)
         im_sc = im[int(bbx_sc.y):int(bbx_sc.y+bbx_sc.h), int(bbx_sc.x):int(bbx_sc.x+bbx_sc.w)]
         im_sc = cv2.resize(im_sc, (IMAGE_SIZE, IMAGE_SIZE))
         name = dst+imgName+'sc.png'
@@ -126,9 +121,9 @@ class BBox(object):
 if __name__ == '__main__':
     data = read_data_from_txt("datasets/lfpw-trainset/", image_type = ".png")
     data2 = read_data_from_txt("datasets/helen-trainset/", image_type = ".jpg")
-    data3 = read_data_from_txt("datasets/ibug-trainset/", image_type = ".jpg")
-    data4 = read_data_from_txt("datasets/afw-trainset/", image_type = ".jpg")
-    data_augmentation(data + data2, output='train_new.txt', is_training=False)
+    #data3 = read_data_from_txt("datasets/ibug-trainset/", image_type = ".jpg")
+    #data4 = read_data_from_txt("datasets/afw-trainset/", image_type = ".jpg")
+    data_augmentation(data2, output='train_new.txt', is_training=False)
 
     data = read_data_from_txt("datasets/lfpw-testset/", image_type = ".png")
     data2 = read_data_from_txt("datasets/helen-testset/", image_type = ".jpg")
