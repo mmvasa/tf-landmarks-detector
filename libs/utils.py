@@ -6,14 +6,13 @@ Parag K. Mital
 
 Copyright Parag K. Mital, June 2016.
 """
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import urllib
 import numpy as np
 import zipfile
 import os
 from scipy.io import wavfile
-
+import matplotlib.pyplot as plt
 
 def download(path):
     """Use urllib to download a file.

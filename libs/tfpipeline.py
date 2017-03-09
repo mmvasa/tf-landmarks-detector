@@ -1,7 +1,6 @@
 import tensorflow as tf
 import numpy as np
 from functools import partial
-import matplotlib.pyplot as plt
 
 Y_SIZE = 136
 
@@ -11,7 +10,6 @@ def read_my_file_format(filename):
         field_delim=" ")
     imgName = components[0]
     features = components[1:]
-    print(imgName)
     img_contents = tf.read_file(imgName)
     img = tf.image.decode_png(img_contents, channels=1)
     return img, features
@@ -41,7 +39,7 @@ def input_pipeline(TXTs, batch_size, shape, is_training=False):
     # if is_training:
     #     float_image = distort_color(float_image)
     # img_batch, label_batch = tf.train.batch([float_image, features], batch_size=batch_size)
-    min_after_dequeue = 100000 // 100
+    min_after_dequeue = 10000 // 100
 
     # The capacity should be larger than min_after_dequeue, and determines how
     # many examples are prefetched.  TF docs recommend setting this value to:
@@ -56,7 +54,7 @@ def input_pipeline(TXTs, batch_size, shape, is_training=False):
                                    min_after_dequeue=min_after_dequeue,
                                    num_threads=10)
     # img_batch, label_batch = tf.train.batch([float_image, features], batch_size=batch_size)
-    return img_batch, label_batch
+    return img_batch, label_batch, value
 
 def distort_color(image, thread_id=0, stddev=0.1, scope=None):
     """Distort the color of the image.

@@ -12,7 +12,6 @@ import numpy as np
 import os.path
 import tensorflow as tf
 import time
-import matplotlib.pyplot as plt
 from model_train import deepID
 from libs.tfpipeline import input_pipeline
 
@@ -36,13 +35,16 @@ tf.app.flags.DEFINE_boolean('run_once', True,
                             """Whether to run eval only once.""")
 
 # Flags governing the data used for the eval.
-tf.app.flags.DEFINE_integer('num_examples', 3466,
+tf.app.flags.DEFINE_integer('num_examples', 3000,
                             """Number of examples to run.""")
-tf.app.flags.DEFINE_integer('batch_size', 2,
+tf.app.flags.DEFINE_integer('batch_size', 1,
                             """Number of examples per batch.""")
 tf.app.flags.DEFINE_string('data_txt', 'test_new.txt',
                            """The text file containing test data path and annotations.""")
 tf.app.flags.DEFINE_string('device', '/cpu:0', 'the device to eval on.')
+tf.app.flags.DEFINE_string('use_tk2', True,
+                           """Directory where to read model checkpoints.""")
+
 
 def normalized_rmse(pred, gt_truth):
     # TODO: assert shapes
@@ -79,7 +81,7 @@ def _eval_once(saver, rmse_op, network):
     else:
       print('No checkpoint file found')
       return
-    test_x, test_label = input_pipeline([FLAGS.data_txt], batch_size=FLAGS.batch_size, shape=[64, 64, 1], is_training=False)
+    test_x, test_label, filename = input_pipeline([FLAGS.data_txt], batch_size=FLAGS.batch_size, shape=[64, 64, 1], is_training=False)
     # Start the queue runners.
     coord = tf.train.Coordinator()
     try:
@@ -97,10 +99,14 @@ def _eval_once(saver, rmse_op, network):
 
       print('%s: starting evaluation on (%s).' % (datetime.now(), 'tf/'))
       start_time = time.time()
-      fig = plt.figure()
-      plt.show(block=False)      
+      
+      if FLAGS.use_tk2 is True: 
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        plt.show(block=False)
+      
       while step < num_iter and not coord.should_stop():
-        test_xs, label = sess.run([test_x, test_label])
+        test_xs, label, name = sess.run([test_x, test_label, filename])
         pred, rmse = sess.run(rmse_op, feed_dict={network['x']: test_xs, network['y']: label, network['train']: False,
                 network['keep_prob']: 0.5})
         errors.append(rmse)
@@ -109,23 +115,26 @@ def _eval_once(saver, rmse_op, network):
           duration = time.time() - start_time
           sec_per_batch = duration / 20.0
           examples_per_sec = FLAGS.batch_size / sec_per_batch
-          print('%s: [%d batches out of %d] (%.1f examples/sec; %.3f'
-                'sec/batch)' % (datetime.now(), step, num_iter,
-                                examples_per_sec, sec_per_batch))
+          if rmse[0] > 0.07:
+             print('%s: [%d batches out of %d] (%.1f examples/sec; %.3f'
+                'sec/batch) filename = %s, error = %.3f' % (datetime.now(), step, num_iter,
+                                examples_per_sec, sec_per_batch, name, rmse[0]))
 
-          start_time = time.time()
+             start_time = time.time()
 
-          plt.clf()
-          plt.imshow(test_xs[0].reshape((64,64)),cmap=plt.cm.gray)
-          #points = label.reshape([-1,int(Y_SIZE/2),2])
-          #for p in points[0]:
-          #  plt.plot(p[0] * 64, p[1] * 64, 'ro')
-          points = pred.reshape([-1,int(Y_SIZE/2),2])
-          for p in points[0]:
-            plt.plot(p[0] * 64, p[1] * 64, 'r.')
-          
-          fig.canvas.draw()
-          time.sleep(2)
+             if FLAGS.use_tk2 is True: 
+                plt.clf()
+                plt.imshow(test_xs[0].reshape((64,64)),cmap=plt.cm.gray)
+                points = label.reshape([-1,int(Y_SIZE/2),2])
+                for p in points[0]:
+                  plt.plot(p[0] * 64, p[1] * 64, 'g.')
+                points = pred.reshape([-1,int(Y_SIZE/2),2])
+                for p in points[0]:
+                  plt.plot(p[0] * 64, p[1] * 64, 'r.')
+                
+                
+                fig.canvas.draw()
+                time.sleep(1)
 
 
       errors = np.vstack(errors).ravel()
@@ -152,8 +161,8 @@ def evaluate(shape=[64, 64, 1]):
   with tf.Graph().as_default(), tf.device('/cpu:0'):
     train_dir = Path(FLAGS.checkpoint_dir)
     
-    images, landmarks = input_pipeline(
-            [FLAGS.data_txt], batch_size=2,
+    images, landmarks, _ = input_pipeline(
+            [FLAGS.data_txt], batch_size=1,
             shape=shape, is_training=False)
 
     # mirrored_images, _, mirrored_inits, shapes = data_provider.batch_inputs(

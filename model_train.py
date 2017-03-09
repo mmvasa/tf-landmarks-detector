@@ -190,18 +190,13 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
                 dropout=False,
                 batch_size=64):
     with tf.device('/cpu:0'): 
-      batch_x, label_x = input_pipeline(['train_new.txt'], batch_size=batch_size, shape=[IMAGE_SIZE, IMAGE_SIZE, 1], is_training=True)
-    # with h5py.File('../../train/1_F/train.h5', 'r') as hdf:
-    #     data = hdf['data'][:]
-    #     label = hdf['landmark'][:]
-    # length = len(label)
-    # test_x, test_label = input_pipeline(['tfboy.txt'], batch_size=batch_size, shape=input_shape[1:], is_training=False)
+      batch_x, label_x,_ = input_pipeline(['train_new.txt'], batch_size=batch_size, shape=[IMAGE_SIZE, IMAGE_SIZE, 1], is_training=True)
     
     deepid = deepID(input_shape=input_shape, n_filters=n_filters, filter_sizes=filter_sizes, activation=activation,
         dropout=dropout)
 
     batch = tf.Variable(0, dtype=tf.int32)
-    learning_rate = tf.train.exponential_decay(0.003, batch * batch_size, 20000, 0.95, staircase=True)
+    learning_rate = tf.train.exponential_decay(0.003, batch * batch_size, 150000, 0.95, staircase=True)
     optimizer = tf.train.AdamOptimizer(
         learning_rate).minimize(deepid['cost'], global_step=batch)
     save_step = 100
@@ -217,84 +212,41 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
         else:
            saver = tf.train.Saver(max_to_keep=5)
            sess.run(tf.initialize_all_variables())
-        #ckpt = tf.train.get_checkpoint_state('models')
-        #if ckpt and ckpt.model_checkpoint_path:
-        #    print("Continue training from the model {}".format(ckpt.model_checkpoint_path))
-        #    saver.restore(sess, ckpt.model_checkpoint_path)
+
         coord = tf.train.Coordinator()
-
-        # Ensure no more changes to graph
         tf.get_default_graph().finalize()
-
-        # Start up the queues for handling the image pipeline
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        batch_i = 0
-
-
-        
-
-        # start_idx = 0
-        # end_idx = 0
         if FLAGS.use_tk is True: 
            import matplotlib.pyplot as plt
            fig = plt.figure()
            plt.show(block=False)
-        
+
+        batch_i = 0
         run_metadata = tf.RunMetadata()
         for i in range(1000000):
             batch_i += 1
-            
-
             batch_xs, batch_label = sess.run([batch_x, label_x], options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),
             run_metadata=run_metadata)
-
-               # end_idx = (start_idx + batch_size) % length
-               # if start_idx + batch_size >= length:
-               #     batch_xs = np.vstack((data[start_idx:], data[:end_idx]))
-               #     batch_label = np.vstack((label[start_idx:], label[:end_idx]))
-               # else:
-               #     batch_xs = data[start_idx:end_idx]
-               #     batch_label = label[start_idx:end_idx]
-               # batch_xs = batch_xs.reshape((batch_size, 39, 39, 1))
-               # start_idx = end_idx
-
-               # print(np.max(batch_xs), np.min(batch_xs))
-
-            
             train_cost, pred = sess.run([deepid['cost'], deepid['pred'], optimizer], feed_dict={
                       deepid['x']: batch_xs, deepid['y']: batch_label, deepid['train']: True,
                       deepid['keep_prob']: 0.5})[:2]
                   
-            if batch_i % 20 == 0:
-                print('batch_i: {}, train_cost: {}'.format(batch_i, train_cost))
+            if batch_i % 60 == 0:
                 lr = sess.run(learning_rate)
-                print('learning-rate: %.10f' % lr)
-                # id = np.random.randint(10)
-                id = 0
+                print("batch_i: {}, learning-rate: {:0.10f} train_cost: {:0.10f}".format(batch_i, lr, train_cost))
+                id = np.random.randint(10)
                 batch_label = batch_label.reshape([-1,int(Y_SIZE/2),2])
-                #print('label: ' + np.array_str(batch_label[id]))
-                #print('pred:  ' + np.array_str(pred[id]))
-
-                err = evaluateBatchError(batch_label, pred, batch_size)
-                print('Mean error:' + np.array_str(err))
-                
                 if FLAGS.use_tk is True: 
                    plt.clf()
                    plt.imshow(batch_xs[0].reshape((IMAGE_SIZE,IMAGE_SIZE)),cmap=plt.cm.gray)
-                   
                    for p in batch_label[0]:
                      plt.plot(p[0] * IMAGE_SIZE, p[1] * IMAGE_SIZE, 'g.')
-                   
                    for p in pred[0]:
                      plt.plot(p[0] * IMAGE_SIZE, p[1] * IMAGE_SIZE, 'r.')
                    fig.canvas.draw()
-                     
-
-
-
+                 
             if batch_i % save_step == 0:
-                # Save the variables to disk.
                 saver.save(sess, "./models/" + 'deepid.ckpt',
                            global_step=batch_i,
                            write_meta_graph=False)
