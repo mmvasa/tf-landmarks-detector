@@ -13,16 +13,12 @@ import os.path
 import tensorflow as tf
 import time
 from model_train import deepID
-from libs.tfpipeline import input_pipeline
+from input import distorted_inputs, TRAIN_IMAGE_SIZE
+from libs.utils import show_image_with_pred
 
 Y_SIZE = 136
-IMAGE_SIZE = 64
-
-# Do not use a gui toolkit for matlotlib.
-matplotlib.use('Agg')
 
 FLAGS = tf.app.flags.FLAGS
-
 
 #tf.app.flags.DEFINE_string('checkpoint_dir', 'models/',
 #                           """Directory where to read model checkpoints.""")
@@ -81,7 +77,12 @@ def _eval_once(saver, rmse_op, network):
     else:
       print('No checkpoint file found')
       return
-    test_x, test_label, filename = input_pipeline([FLAGS.data_txt], batch_size=FLAGS.batch_size, shape=[64, 64, 1], is_training=False)
+
+    test_x, test_label = distorted_inputs(batch_size=4)
+    test_label = tf.reshape(test_label, [-1,136])      
+
+
+    #test_x, test_label, filename = input_pipeline([FLAGS.data_txt], batch_size=FLAGS.batch_size, shape=[64, 64, 1], is_training=False)
     # Start the queue runners.
     coord = tf.train.Coordinator()
     try:
@@ -100,13 +101,8 @@ def _eval_once(saver, rmse_op, network):
       print('%s: starting evaluation on (%s).' % (datetime.now(), 'tf/'))
       start_time = time.time()
       
-      if FLAGS.use_tk2 is True: 
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        plt.show(block=False)
-      
       while step < num_iter and not coord.should_stop():
-        test_xs, label, name = sess.run([test_x, test_label, filename])
+        test_xs, label = sess.run([test_x, test_label])
         pred, rmse = sess.run(rmse_op, feed_dict={network['x']: test_xs, network['y']: label, network['train']: False,
                 network['keep_prob']: 0.5})
         errors.append(rmse)
@@ -115,26 +111,16 @@ def _eval_once(saver, rmse_op, network):
           duration = time.time() - start_time
           sec_per_batch = duration / 20.0
           examples_per_sec = FLAGS.batch_size / sec_per_batch
-          if rmse[0] > 0.07:
-             print('%s: [%d batches out of %d] (%.1f examples/sec; %.3f'
-                'sec/batch) filename = %s, error = %.3f' % (datetime.now(), step, num_iter,
-                                examples_per_sec, sec_per_batch, name, rmse[0]))
+        
+          print('%s: [%d batches out of %d] (%.1f examples/sec; %.3f'
+             'sec/batch) error = %.3f' % (datetime.now(), step, num_iter,
+                             examples_per_sec, sec_per_batch, rmse[0]))
 
-             start_time = time.time()
+          start_time = time.time()
 
-             if FLAGS.use_tk2 is True: 
-                plt.clf()
-                plt.imshow(test_xs[0].reshape((64,64)),cmap=plt.cm.gray)
-                points = label.reshape([-1,int(Y_SIZE/2),2])
-                for p in points[0]:
-                  plt.plot(p[0] * 64, p[1] * 64, 'g.')
-                points = pred.reshape([-1,int(Y_SIZE/2),2])
-                for p in points[0]:
-                  plt.plot(p[0] * 64, p[1] * 64, 'r.')
-                
-                
-                fig.canvas.draw()
-                time.sleep(1)
+          if FLAGS.use_tk2 is True:
+             show_image_with_pred(test_xs[0], label.reshape([-1,int(Y_SIZE/2),2])[0], pred.reshape([-1,int(Y_SIZE/2),2])[0])
+             time.sleep(1)
 
 
       errors = np.vstack(errors).ravel()
@@ -151,47 +137,26 @@ def _eval_once(saver, rmse_op, network):
 
     coord.request_stop()
     coord.join(threads, stop_grace_period_secs=10)
-
-    
+   
 
 
 
 def evaluate(shape=[64, 64, 1]):
   """Evaluate model on Dataset for a number of steps."""
   with tf.Graph().as_default(), tf.device('/cpu:0'):
-    train_dir = Path(FLAGS.checkpoint_dir)
-    
-    images, landmarks, _ = input_pipeline(
-            [FLAGS.data_txt], batch_size=1,
-            shape=shape, is_training=False)
-
-    # mirrored_images, _, mirrored_inits, shapes = data_provider.batch_inputs(
-    #     [dataset_path], reference_shape,
-    #     batch_size=FLAGS.batch_size, is_training=False, mirror_image=True)
-
     print('Loading model...')
-    # Build a Graph that computes the logits predictions from the
-    # inference model.
+
     with tf.device(FLAGS.device):
-        deepid = deepID(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1], n_filters=[26, 52, 52, 80], 
+        deepid = deepID(input_shape=[None, TRAIN_IMAGE_SIZE, TRAIN_IMAGE_SIZE, 1], n_filters=[26, 52, 52, 80], 
             filter_sizes=[3, 6, 6, 4], activation=tf.nn.relu, dropout=False)
 
         tf.get_variable_scope().reuse_variables()
 
-
-
     avg_pred = deepid['pred']
     gt_truth = deepid['y']
     gt_truth = tf.reshape(gt_truth, (-1, int(Y_SIZE/2), 2))
-    # Calculate predictions.
     norm_error = normalized_rmse(avg_pred, gt_truth)
-
-    # Restore the moving average version of the learned variables for eval.
-    # variable_averages = tf.train.ExponentialMovingAverage(
-        # 0.9999)
-    # variables_to_restore = variable_averages.variables_to_restore()
     saver = tf.train.Saver()
-
 
     while True:
       _eval_once(saver, norm_error, deepid)

@@ -5,14 +5,13 @@ Copyright Mario S. Lew, Oct 2016
 import tensorflow as tf
 import numpy as np
 import os
-from libs.tfpipeline import input_pipeline
+from input import distorted_inputs, TRAIN_IMAGE_SIZE
 from libs.batch_norm import batch_norm
 from libs import utils
 from numpy.linalg import norm
 
 
 Y_SIZE = 136
-IMAGE_SIZE = 64
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('checkpoint_dir', 'models/',
@@ -183,26 +182,36 @@ def evaluateBatchError(landmarkGt, landmarkP, batch_size):
     mean_err = e.mean(axis=0)
     return mean_err
 
-def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
+def train_deepid(input_shape=[None, TRAIN_IMAGE_SIZE, TRAIN_IMAGE_SIZE, 1],
                 n_filters=[26, 52, 52, 80],
                 filter_sizes=[3, 6, 6, 4],
                 activation=tf.nn.relu,
                 dropout=False,
-                batch_size=64):
+                batch_size=128):
+   
     with tf.device('/cpu:0'): 
-      batch_x, label_x,_ = input_pipeline(['train_new.txt'], batch_size=batch_size, shape=[IMAGE_SIZE, IMAGE_SIZE, 1], is_training=True)
+      batch_x, label_x = distorted_inputs(batch_size=batch_size)
     
-    deepid = deepID(input_shape=input_shape, n_filters=n_filters, filter_sizes=filter_sizes, activation=activation,
-        dropout=dropout)
-
+    label_x = tf.reshape(label_x, [-1,136])      
+      #batch_x, label_x,_ = input_pipeline(['train_new.txt'], batch_size=batch_size, shape=[IMAGE_SIZE, IMAGE_SIZE, 1], is_training=True)
+    
     batch = tf.Variable(0, dtype=tf.int32)
-    learning_rate = tf.train.exponential_decay(0.003, batch * batch_size, 150000, 0.95, staircase=True)
-    optimizer = tf.train.AdamOptimizer(
-        learning_rate).minimize(deepid['cost'], global_step=batch)
+ 
+    with tf.device('/gpu:0'): 
+      deepid = deepID(input_shape=input_shape, n_filters=n_filters, filter_sizes=filter_sizes, activation=activation, dropout=dropout)
+      learning_rate = tf.train.exponential_decay(0.003, batch * batch_size, 150000, 0.95, staircase=True)
+      optimizer = tf.train.AdamOptimizer(learning_rate).minimize(deepid['cost'], global_step=batch)
+   
+    
+    tf.summary.scalar('learning_rate', learning_rate)
     save_step = 100
     saver = tf.train.Saver()
     
     with tf.Session() as sess:
+
+        merged = tf.summary.merge_all()
+        train_writer = tf.summary.FileWriter('train', sess.graph)
+
         ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
            saver.restore(sess, ckpt.model_checkpoint_path)
@@ -210,17 +219,12 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
            print('Succesfully loaded model from %s at step=%s.' %
                (ckpt.model_checkpoint_path, global_step))
         else:
-           saver = tf.train.Saver(max_to_keep=5)
+           saver = tf.train.Saver(max_to_keep=2)
            sess.run(tf.initialize_all_variables())
 
         coord = tf.train.Coordinator()
         tf.get_default_graph().finalize()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-
-        if FLAGS.use_tk is True: 
-           import matplotlib.pyplot as plt
-           fig = plt.figure()
-           plt.show(block=False)
 
         batch_i = 0
         run_metadata = tf.RunMetadata()
@@ -232,30 +236,24 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
                       deepid['x']: batch_xs, deepid['y']: batch_label, deepid['train']: True,
                       deepid['keep_prob']: 0.5})[:2]
                   
-            if batch_i % 60 == 0:
+            if batch_i % 2 == 0:
                 lr = sess.run(learning_rate)
                 print("batch_i: {}, learning-rate: {:0.10f} train_cost: {:0.10f}".format(batch_i, lr, train_cost))
                 id = np.random.randint(10)
                 batch_label = batch_label.reshape([-1,int(Y_SIZE/2),2])
-                if FLAGS.use_tk is True: 
-                   plt.clf()
-                   plt.imshow(batch_xs[0].reshape((IMAGE_SIZE,IMAGE_SIZE)),cmap=plt.cm.gray)
-                   for p in batch_label[0]:
-                     plt.plot(p[0] * IMAGE_SIZE, p[1] * IMAGE_SIZE, 'g.')
-                   for p in pred[0]:
-                     plt.plot(p[0] * IMAGE_SIZE, p[1] * IMAGE_SIZE, 'r.')
-                   fig.canvas.draw()
+                if FLAGS.use_tk is True:
+                   utils.show_image(batch_xs[0], batch_label[0])
                  
             if batch_i % save_step == 0:
                 saver.save(sess, "./models/" + 'deepid.ckpt',
                            global_step=batch_i,
                            write_meta_graph=False)
 
-        from tensorflow.python.client import timeline
+        """from tensorflow.python.client import timeline
         trace = timeline.Timeline(step_stats=run_metadata.step_stats)         
        
         trace_file = open('timeline.ctf.json', 'w')
-        trace_file.write(trace.generate_chrome_trace_format())
+        trace_file.write(trace.generate_chrome_trace_format())"""
 
         coord.request_stop()
         coord.join(threads)

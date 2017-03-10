@@ -12,7 +12,37 @@ import numpy as np
 import zipfile
 import os
 from scipy.io import wavfile
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+
+fig = None
+
+def show_image(img, landmarks):
+    import matplotlib.pyplot as plt
+    global fig
+    if fig is None:
+      fig = plt.figure()
+      plt.show(block=False)
+    plt.clf()
+    plt.imshow(img[:,:,0],cmap=plt.cm.gray)
+    points = landmarks
+    for p in points:
+      plt.plot(p[0], p[1], 'r.')
+    fig.canvas.draw()
+
+def show_image_with_pred(img, landmarks, pred):
+    import matplotlib.pyplot as plt
+    global fig
+    if fig is None:
+      fig = plt.figure()
+      plt.show(block=False)
+    plt.clf()
+    plt.imshow(img[:,:,0],cmap=plt.cm.gray)
+    points = landmarks
+    for p in points:
+      plt.plot(p[0], p[1], 'g.')
+    for p in pred:
+      plt.plot(p[0], p[1], 'r.')
+    fig.canvas.draw()
 
 def download(path):
     """Use urllib to download a file.
