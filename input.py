@@ -4,12 +4,12 @@ import numpy as np
 
 fig = None
 
-TRAIN_IMAGE_SIZE = 96
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50
+TRAIN_IMAGE_SIZE = 64
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 2000
 
 def read_dataset(format="jpg"):
 
-   is_training = False
+   is_training = True
 
    def replace_extension(filename): 
       return filename.decode('utf8').replace('.pts', '.' + format).encode('utf8')
@@ -53,10 +53,14 @@ def read_dataset(format="jpg"):
    
    result = DatasetRecord()
 
-   files = tf.matching_files('datasets/helen-testset/*.pts')
+   files = tf.matching_files('datasets/helen-trainset/*.pts')
    filename_queue = tf.train.string_input_producer(files, shuffle=is_training)
+
    reader = tf.WholeFileReader()
    result.filename, features_file = reader.read(filename_queue)
+
+   reader2 = tf.WholeFileReader()
+   result.filename, features_file = reader2.read(filename_queue)
 
    image_path = tf.py_func(replace_extension, [result.filename], tf.string)
 
@@ -83,7 +87,7 @@ def read_dataset(format="jpg"):
    return result
 
 def _generate_image_and_label_batch(image, label, min_queue_examples, batch_size, shuffle):
-   num_preprocess_threads = 26
+   num_preprocess_threads = 4
    if shuffle:
       images, label_batch = tf.train.shuffle_batch(
         [image, label],
@@ -110,9 +114,8 @@ def distorted_inputs(batch_size):
 
    read_input = read_dataset()
    distorted_image = read_input.image
-   distorted_image = tf.random_crop(distorted_image, [TRAIN_IMAGE_SIZE, TRAIN_IMAGE_SIZE, 1])
-   distorted_image = tf.image.random_brightness(distorted_image, max_delta=0.2)
-   distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
+   #distorted_image = tf.image.random_brightness(distorted_image, max_delta=0.2)
+   #distorted_image = tf.image.random_contrast(distorted_image, lower=0.2, upper=1.8)
   
    distorted_image.set_shape([TRAIN_IMAGE_SIZE, TRAIN_IMAGE_SIZE, 1])
    read_input.landmarks.set_shape([68, 2])   
