@@ -589,7 +589,8 @@ def conv2d(x, n_output,
         Output of convolution
     """
     with tf.variable_scope(name or 'conv2d', reuse=reuse):
-        W = tf.get_variable(
+        with tf.device('/cpu:0'):
+         W = tf.get_variable(
             name='W',
             shape=[k_h, k_w, x.get_shape()[-1], n_output],
             initializer=tf.contrib.layers.xavier_initializer_conv2d())
@@ -600,13 +601,15 @@ def conv2d(x, n_output,
             filter=W,
             strides=[1, d_h, d_w, 1],
             padding=padding)
-
-        b = tf.get_variable(
+        
+        with tf.device('/cpu:0'):
+         b = tf.get_variable(
             name='b',
             shape=[n_output],
             initializer=tf.constant_initializer(0.0))
-
-        h = tf.nn.bias_add(
+        
+        with tf.device('/cpu:0'):
+         h = tf.nn.bias_add(
             name='h',
             value=conv,
             bias=b)
@@ -717,19 +720,20 @@ def linear(x, n_output, name=None, activation=None, reuse=None):
     n_input = x.get_shape().as_list()[1]
 
     with tf.variable_scope(name or "fc", reuse=reuse):
-        W = tf.get_variable(
+        with tf.device('/cpu:0'):
+         W = tf.get_variable(
             name='W',
             shape=[n_input, n_output],
             dtype=tf.float32,
             initializer=tf.contrib.layers.xavier_initializer())
-
-        b = tf.get_variable(
+        with tf.device('/cpu:0'):
+         b = tf.get_variable(
             name='b',
             shape=[n_output],
             dtype=tf.float32,
             initializer=tf.constant_initializer(0.0))
-
-        h = tf.nn.bias_add(
+        with tf.device('/cpu:0'):
+         h = tf.nn.bias_add(
             name='h',
             value=tf.matmul(x, W),
             bias=b)

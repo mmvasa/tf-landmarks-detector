@@ -59,9 +59,6 @@ def read_dataset(format="jpg"):
    reader = tf.WholeFileReader()
    result.filename, features_file = reader.read(filename_queue)
 
-   reader2 = tf.WholeFileReader()
-   result.filename, features_file = reader2.read(filename_queue)
-
    image_path = tf.py_func(replace_extension, [result.filename], tf.string)
 
    if format == 'jpg':   
@@ -94,7 +91,8 @@ def _generate_image_and_label_batch(image, label, min_queue_examples, batch_size
         batch_size=batch_size,
         num_threads=num_preprocess_threads,
         capacity=min_queue_examples + 3 * batch_size,
-        min_after_dequeue=min_queue_examples)
+        min_after_dequeue=min_queue_examples,
+        )
    else:
       images, label_batch = tf.train.batch(
         [image, label],
@@ -108,7 +106,7 @@ def _generate_image_and_label_batch(image, label, min_queue_examples, batch_size
 
 def distorted_inputs(batch_size):
 
-   min_fraction_of_examples_in_queue = 0.4
+   min_fraction_of_examples_in_queue = 1 
    min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN *
                            min_fraction_of_examples_in_queue)
 

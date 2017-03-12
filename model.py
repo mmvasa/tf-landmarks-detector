@@ -4,7 +4,7 @@ from input import NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('batch_size', 64,
+tf.app.flags.DEFINE_integer('batch_size', 96,
                             """Number of images to process in a batch.""")
 
 # Constants describing the training process.
@@ -31,6 +31,7 @@ def inference(image, y,
 
     # Build the encoder
     shapes.append(current_input.get_shape().as_list())
+
     conv1, W = utils.conv2d(x=current_input,
                         n_output=n_filters[0],
                         k_h=filter_sizes[0],

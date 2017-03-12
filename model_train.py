@@ -8,7 +8,7 @@ from numpy.linalg import norm
 import model
 import time 
 from datetime import datetime
-from libs.utils import show_image_with_pred
+#from libs.utils import show_image_with_pred
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('checkpoint_dir', 'models/',
@@ -17,7 +17,7 @@ tf.app.flags.DEFINE_string('checkpoint_dir', 'models/',
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
 
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.app.flags.DEFINE_boolean('log_device_placement', True,
                             """Whether to log device placement.""")
 
 def train():
@@ -58,8 +58,8 @@ def train():
                hooks=[tf.train.StopAtStepHook(last_step=FLAGS.max_steps),
                       tf.train.NanTensorHook(cost),
                       _LoggerHook()],
-               save_checkpoint_secs=6,
-               save_summaries_steps=2,
+               save_checkpoint_secs=10,
+               save_summaries_steps=20,
                config=tf.ConfigProto(
                    log_device_placement=FLAGS.log_device_placement)) as mon_sess:
             
@@ -67,7 +67,7 @@ def train():
             [_, image_, lm_, pred_] = mon_sess.run([train_op, images, landmarks, pred])
             #print('Pred=', pred_[0])
             #print('Y=', lm_[0])
-            show_image_with_pred(image_[0], pred_.reshape([-1,64,2])[0], lm_.reshape([-1,64,2])[0])
+            #show_image_with_pred(image_[0], pred_.reshape([-1,64,2])[0], lm_.reshape([-1,64,2])[0])
             time.sleep(0.1)
 
 
