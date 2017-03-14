@@ -23,7 +23,7 @@ def read_data_from_txt(path, image_type):
                y_max = int(max([a[1] for a in points]))
                x_margin = (x_max - x_min) * 0.1
                y_margin = (y_max - y_min) * 0.1
-               result.append([image_name.replace(".pts", image_type), BBox([x_min-x_margin, x_max+x_margin, y_min-y_margin,y_max+y_margin]), 
+               result.append([image_name.replace(".pts", image_type), BBox([x_min-x_margin, x_max+x_margin, y_min-y_margin, y_max+y_margin]), 
                      points])
     return result
 
@@ -61,9 +61,9 @@ def data_augmentation(data, output, is_training=False):
     for (imgPath, bbx, landmarks) in data:
         im = cv2.imread(imgPath, cv2.IMREAD_GRAYSCALE)
         imgName = imgPath.split('/')[-1][:-4]
-        
+        print(im.shape)
         bbx_sc = bbx #.bbxScale(im.shape, scale=1)
-        im_sc = im[int(bbx_sc.y):int(bbx_sc.y+bbx_sc.h), int(bbx_sc.x):int(bbx_sc.x+bbx_sc.w)]
+        im_sc = im[max(int(bbx_sc.y), 0):min(int(bbx_sc.y+bbx_sc.h), im.shape[1]), max(int(bbx_sc.x), 0): min(int(bbx_sc.x+bbx_sc.w), im.shape[0]) ]
         
         try:
            im_sc = cv2.resize(im_sc, (IMAGE_SIZE, IMAGE_SIZE))
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     #data4 = read_data_from_txt("datasets/afw-trainset/", image_type = ".jpg")
     data_augmentation(data + data2, output='train_new.txt', is_training=True)
 
-    data = read_data_from_txt("datasets/lfpw-testset/", image_type = ".png")
-    data2 = read_data_from_txt("datasets/helen-testset/", image_type = ".jpg")
-    data_augmentation(data + data2, output='test_new.txt', is_training=False)
+    #data = read_data_from_txt("datasets/lfpw-testset/", image_type = ".png")
+    #data2 = read_data_from_txt("datasets/helen-testset/", image_type = ".jpg")
+    #data_augmentation(data + data2, output='test_new.txt', is_training=False)
 
