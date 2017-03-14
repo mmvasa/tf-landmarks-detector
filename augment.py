@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-AUGMENTED_PATH = 'augmented-data/'
 IMAGE_SIZE = 64
 
 def read_data_from_txt(path, image_type):
@@ -55,19 +54,17 @@ def processImage(imgs):
         imgs[i] = (img - m) / s
     return imgs
 
-def data_augmentation(data, output, is_training=False):
+def data_augmentation(data, output, output_dir, is_training=False):
     lines = []
-    dst = AUGMENTED_PATH
     for (imgPath, bbx, landmarks) in data:
         im = cv2.imread(imgPath, cv2.IMREAD_GRAYSCALE)
         imgName = imgPath.split('/')[-1][:-4]
-        print(im.shape)
-        bbx_sc = bbx #.bbxScale(im.shape, scale=1)
-        im_sc = im[max(int(bbx_sc.y), 0):min(int(bbx_sc.y+bbx_sc.h), im.shape[1]), max(int(bbx_sc.x), 0): min(int(bbx_sc.x+bbx_sc.w), im.shape[0]) ]
+        bbx_sc = bbx
+        im_sc = im[max(int(bbx_sc.y), 0):min(int(bbx_sc.y+bbx_sc.h), im.shape[0]), max(int(bbx_sc.x), 0): min(int(bbx_sc.x+bbx_sc.w), im.shape[1]) ]
         
         try:
            im_sc = cv2.resize(im_sc, (IMAGE_SIZE, IMAGE_SIZE))
-           name = dst+imgName+'sc.png'
+           name = output_dir+imgName+'sc.png'
            cv2.imwrite(name, im_sc)
            lm_sc = bbx_sc.normalizeLmToBbx(landmarks)
            lines.append(name + ' ' + ' '.join(map(str, lm_sc.flatten())) + '\n')
@@ -76,7 +73,7 @@ def data_augmentation(data, output, is_training=False):
                continue
 
            flipsc, lm_flipsc = flip(im_sc, lm_sc)
-           name = dst+imgName+'flipsc.png'
+           name = output_dir+imgName+'flipsc.png'
            cv2.imwrite(name, flipsc)
            lines.append(name + ' ' + ' '.join(map(str, lm_flipsc.flatten())) + '\n')
         except:
@@ -129,9 +126,9 @@ if __name__ == '__main__':
     data2 = read_data_from_txt("datasets/helen-trainset/", image_type = ".jpg")
     #data3 = read_data_from_txt("datasets/ibug-trainset/", image_type = ".jpg")
     #data4 = read_data_from_txt("datasets/afw-trainset/", image_type = ".jpg")
-    data_augmentation(data + data2, output='train_new.txt', is_training=True)
+    data_augmentation(data + data2, output='train_new.txt', output_dir='augmented_train/', is_training=False)
 
-    #data = read_data_from_txt("datasets/lfpw-testset/", image_type = ".png")
-    #data2 = read_data_from_txt("datasets/helen-testset/", image_type = ".jpg")
-    #data_augmentation(data + data2, output='test_new.txt', is_training=False)
+    data = read_data_from_txt("datasets/lfpw-testset/", image_type = ".png")
+    data2 = read_data_from_txt("datasets/helen-testset/", image_type = ".jpg")
+    data_augmentation(data + data2, output='test_new.txt', output_dir='augmented_test/', is_training=False)
 

@@ -5,7 +5,7 @@ from functools import partial
 Y_SIZE = 136
 
 def read_my_file_format(filename):
-    record_defaults = [[""]] + [[1.0]] * Y_SIZE
+    record_defaults = [[""]] + [[1.0]] * 136
     components = tf.decode_csv(filename, record_defaults=record_defaults, 
         field_delim=" ")
     imgName = components[0]
