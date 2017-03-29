@@ -47,13 +47,17 @@ def input_pipeline(TXTs, batch_size, shape, is_training=False):
     capacity = min_after_dequeue + (4 + 2) * batch_size
 
     # Randomize the order and output batches of batch_size.
-    img_batch, label_batch = tf.train.shuffle_batch([float_image, features],
+    if is_training:
+      img_batch, label_batch = tf.train.shuffle_batch([float_image, features],
                                    enqueue_many=False,
                                    batch_size=batch_size,
                                    capacity=capacity,
                                    min_after_dequeue=min_after_dequeue,
                                    num_threads=10)
-    # img_batch, label_batch = tf.train.batch([float_image, features], batch_size=batch_size)
+    else:
+      #img_batch = float_image
+      #label_batch = features
+      img_batch, label_batch = tf.train.batch([float_image, features], batch_size=batch_size)
     return img_batch, label_batch, value
 
 def distort_color(image, thread_id=0, stddev=0.1, scope=None):

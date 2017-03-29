@@ -140,7 +140,7 @@ def evaluateBatchError(landmarkGt, landmarkP, batch_size):
     return mean_err
 
 def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
-                n_filters=[26, 52, 52, 80],
+                n_filters=[30, 60, 60, 90],
                 filter_sizes=[3, 6, 6, 4],
                 activation=tf.nn.relu,
                 dropout=False,

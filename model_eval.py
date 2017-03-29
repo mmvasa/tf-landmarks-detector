@@ -12,7 +12,7 @@ import os.path
 import tensorflow as tf
 import time
 from model_train import deepID
-from libs.tfpipeline import input_pipeline
+from tfpipeline import input_pipeline
 
 Y_SIZE = 136
 IMAGE_SIZE = 64
@@ -38,7 +38,7 @@ tf.app.flags.DEFINE_integer('num_examples', 554,
                             """Number of examples to run.""")
 tf.app.flags.DEFINE_integer('batch_size', 1,
                             """Number of examples per batch.""")
-tf.app.flags.DEFINE_string('data_txt', 'test_new.txt',
+tf.app.flags.DEFINE_string('data_txt', 'test_new2.txt',
                            """The text file containing test data path and annotations.""")
 tf.app.flags.DEFINE_string('device', '/cpu:0', 'the device to eval on.')
 tf.app.flags.DEFINE_string('use_tk2', True,
@@ -110,7 +110,7 @@ def _eval_once(saver, rmse_op, network):
                 network['keep_prob']: 0.5})
         errors.append(rmse)
         step += 1
-        if step % 2 == 0:
+        if step % 1 == 0:
           duration = time.time() - start_time
           sec_per_batch = duration / 20.0
           examples_per_sec = FLAGS.batch_size / sec_per_batch
@@ -133,7 +133,7 @@ def _eval_once(saver, rmse_op, network):
                 
                 
                 fig.canvas.draw()
-                time.sleep(1)
+                time.sleep(3)
 
 
       errors = np.vstack(errors).ravel()
@@ -172,7 +172,7 @@ def evaluate(shape=[64, 64, 1]):
     # Build a Graph that computes the logits predictions from the
     # inference model.
     with tf.device(FLAGS.device):
-        deepid = deepID(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1], n_filters=[26, 52, 52, 80], 
+        deepid = deepID(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1], n_filters=[30, 60, 60, 90], 
             filter_sizes=[3, 6, 6, 4], activation=tf.nn.relu, dropout=False)
 
         tf.get_variable_scope().reuse_variables()
