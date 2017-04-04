@@ -14,10 +14,6 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('checkpoint_dir', 'models/',
                            """Directory where to read model checkpoints.""")
 
-tf.app.flags.DEFINE_string('use_tk', False,
-                           """Directory where to read model checkpoints.""")
-
-
 def deepID(input_shape,
         n_filters,
         filter_sizes,
@@ -151,11 +147,6 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
         tf.get_default_graph().finalize()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        if FLAGS.use_tk is True: 
-           import matplotlib.pyplot as plt
-           fig = plt.figure()
-           plt.show(block=False)
-
         batch_i = 0
         run_metadata = tf.RunMetadata()
         for i in range(1000000):
@@ -171,25 +162,11 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
                 print("batch_i: {}, learning-rate: {:0.10f} train_cost: {:0.10f}".format(batch_i, lr, train_cost))
                 id = np.random.randint(10)
                 batch_label = batch_label.reshape([-1,int(Y_SIZE/2),2])
-                if FLAGS.use_tk is True: 
-                   plt.clf()
-                   plt.imshow(batch_xs[0].reshape((IMAGE_SIZE,IMAGE_SIZE)),cmap=plt.cm.gray)
-                   for p in batch_label[0]:
-                     plt.plot(p[0] * IMAGE_SIZE, p[1] * IMAGE_SIZE, 'g.')
-                   for p in pred[0]:
-                     plt.plot(p[0] * IMAGE_SIZE, p[1] * IMAGE_SIZE, 'r.')
-                   fig.canvas.draw()
-                 
+               
             if batch_i % save_step == 0:
-                saver.save(sess, "./models/" + 'deepid.ckpt',
+                saver.save(sess, "./models/" + 'deepid.ckpt', 
                            global_step=batch_i,
                            write_meta_graph=False)
-
-        from tensorflow.python.client import timeline
-        trace = timeline.Timeline(step_stats=run_metadata.step_stats)         
-       
-        trace_file = open('timeline.ctf.json', 'w')
-        trace_file.write(trace.generate_chrome_trace_format())
 
         coord.request_stop()
         coord.join(threads)
