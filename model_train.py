@@ -120,7 +120,7 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
                 dropout=False,
                 batch_size=64):
    with tf.device('/cpu:0'): 
-   batch_x, label_x,_ = input_pipeline(['train_new.txt'], batch_size=batch_size, shape=[IMAGE_SIZE, IMAGE_SIZE, 1], is_training=True)
+      batch_x, label_x,_ = input_pipeline(['train_new.txt'], batch_size=batch_size, shape=[IMAGE_SIZE, IMAGE_SIZE, 1], is_training=True)
 
    deepid = deepID(input_shape=input_shape, n_filters=n_filters, filter_sizes=filter_sizes, activation=activation,
      dropout=dropout)
@@ -168,8 +168,8 @@ def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
                            global_step=batch_i,
                            write_meta_graph=False)
 
-        coord.request_stop()
-        coord.join(threads)
+       coord.request_stop()
+       coord.join(threads)
 
 if __name__ == '__main__':
     train_deepid()
