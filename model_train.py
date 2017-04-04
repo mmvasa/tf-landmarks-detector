@@ -117,28 +117,6 @@ def deepID(input_shape,
             'keep_prob': keep_prob,
             'train': phase_train}
 
-def normalized_rmse(pred, gt_truth):
-    # TODO: assert shapes
-    #       remove 5
-    norm = tf.sqrt(tf.reduce_sum(((gt_truth[:, 0, :] - gt_truth[:, 1, :])**2), 1))
-
-    return tf.reduce_sum(tf.sqrt(tf.reduce_sum(tf.square(pred - gt_truth), 2)), 1) / (norm * 5)
-
-def evaluateError(landmarkGt, landmarkP):
-    e = np.zeros(int(Y_SIZE/2))
-    ocular_dist = norm(landmarkGt[1] - landmarkGt[0])
-    for i in range(int(Y_SIZE/2)):
-        e[i] = norm(landmarkGt[i] - landmarkP[i])
-    e = e / ocular_dist
-    return e
-
-def evaluateBatchError(landmarkGt, landmarkP, batch_size):
-    e = np.zeros([batch_size, int(Y_SIZE/2)])
-    for i in range(batch_size):
-        e[i] = evaluateError(landmarkGt[i], landmarkP[i])
-    mean_err = e.mean(axis=0)
-    return mean_err
-
 def train_deepid(input_shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1],
                 n_filters=[30, 60, 60, 90],
                 filter_sizes=[3, 6, 6, 4],
