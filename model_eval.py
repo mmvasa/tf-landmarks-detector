@@ -38,7 +38,7 @@ tf.app.flags.DEFINE_integer('num_examples', 554,
                             """Number of examples to run.""")
 tf.app.flags.DEFINE_integer('batch_size', 1,
                             """Number of examples per batch.""")
-tf.app.flags.DEFINE_string('data_txt', 'test_new2.txt',
+tf.app.flags.DEFINE_string('data_txt', 'video_new.txt',
                            """The text file containing test data path and annotations.""")
 tf.app.flags.DEFINE_string('device', '/cpu:0', 'the device to eval on.')
 tf.app.flags.DEFINE_string('use_tk2', True,
@@ -133,7 +133,7 @@ def _eval_once(saver, rmse_op, network):
                 
                 
                 fig.canvas.draw()
-                time.sleep(3)
+                time.sleep(1)
 
 
       errors = np.vstack(errors).ravel()

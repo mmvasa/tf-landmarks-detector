@@ -39,7 +39,7 @@ def input_pipeline(TXTs, batch_size, shape, is_training=False):
     # if is_training:
     #     float_image = distort_color(float_image)
     # img_batch, label_batch = tf.train.batch([float_image, features], batch_size=batch_size)
-    min_after_dequeue = 10000 // 100
+    min_after_dequeue = 100000 // 100
 
     # The capacity should be larger than min_after_dequeue, and determines how
     # many examples are prefetched.  TF docs recommend setting this value to:
